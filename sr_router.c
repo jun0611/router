@@ -347,17 +347,19 @@ void handle_arp_packet(struct sr_instance* sr,
   printf("---------Got an ARP Packet----------\n");
   /* Packet Size */
   int ARP_Packet_Len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
+  printf("1\n");
   /* Getting Ethernet Header */
   sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
-
+  printf("1\n");
   /* Getting ARP Header */
   sr_arp_hdr_t *arp_hdr = (sr_arp_hdr_t *) (sizeof(sr_arp_hdr_t) + sizeof(sr_ethernet_hdr_t));
-
+  printf("1\n");
   /* Getting OP_Code */
   unsigned int ar_op_code = ntohs(arp_hdr->ar_op);
-
+  printf("1\n");
   /* Check if it is for my interfac */
   struct sr_if *my_if = sr_get_interface(sr, interface/*Dest IP add */);
+  printf("1\n");
   /* Check what kind of code */
   if(ar_op_code == arp_op_request){
     printf("---------ARP request----------\n");
