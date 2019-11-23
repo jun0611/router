@@ -24,8 +24,8 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
         next = curr->next;
         handle_arpreq(sr, next);
         curr = next;
+    }
 }
-
 void handle_arpreq(struct sr_instance *sr, struct sr_arpreq req){
     time_t now = time(0);
     if(difftime(now, req->sent) > 1.0){
