@@ -219,17 +219,18 @@ void send_icmp_error_msg(struct sr_instance *sr,
   new_icmp_header->icmp_sum = calc_icmp_checksum(new_icmp_header, sizeof(sr_icmp_t3_hdr_t));
   /*set ip headers*/
   struct sr_rt *lpm = find_lpm(sr->routing_table, ip_dst);
-  struct sr_if *cur_interface = sr_get_interface(sr, lpm->interface);
-  new_ip_header->ip_tos = 0;
-  new_ip_header->ip_len = htons(len - sizeof(sr_ethernet_hdr_t));
-  new_ip_header->ip_id = htons(0);
-  new_ip_header->ip_off = htons(IP_DF);
-  new_ip_header->ip_ttl = 128;
-  new_ip_header->ip_p = ip_protocol_icmp;
-  new_ip_header->ip_src = cur_interface->ip;
-  new_ip_header->ip_dst = ip_dst;
-  new_ip_header->ip_sum = calc_ip_checksum(new_ip_header);
-
+  if(lpm != NULL) {
+    struct sr_if *cur_interface = sr_get_interface(sr, lpm->interface);
+    new_ip_header->ip_tos = 0;
+    new_ip_header->ip_len = htons(len - sizeof(sr_ethernet_hdr_t));
+    new_ip_header->ip_id = htons(0);
+    new_ip_header->ip_off = htons(IP_DF);
+    new_ip_header->ip_ttl = 64;
+    new_ip_header->ip_p = ip_protocol_icmp;
+    new_ip_header->ip_src = cur_interface->ip;
+    new_ip_header->ip_dst = ip_dst;
+    new_ip_header->ip_sum = calc_ip_checksum(new_ip_header);
+  }
   new_eth_header->ether_type = htons(ethertype_ip);
   forward_packet(sr, lpm, new_packet);
 }
