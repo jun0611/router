@@ -115,6 +115,7 @@ void handle_ip_packet(struct sr_instance* sr,
     send_icmp_error_msg(sr, 3, 0, ip_src, (uint8_t*)ip_packet);
   } else {
     /* packet for me*/
+    printf("packet for me\n");
     if(dst_interface != NULL) {
       uint8_t ip_protocol = ip_packet->ip_p;
       if(ip_protocol == ip_protocol_icmp){
@@ -122,18 +123,23 @@ void handle_ip_packet(struct sr_instance* sr,
         sr_icmp_hdr_t *icmp_header = (sr_icmp_hdr_t *)(packet + icmp_offset);
         /* if is ICMP echo req, send echo reply*/
         if(icmp_header->icmp_type == 8 && icmp_header->icmp_code == 0) {
+          printf("icmp echo reply\n");
           send_icmp_echo_reply(sr, packet, len, interface, icmp_header, ip_packet);
         }
       } else {
         /* send icmp port unreachable*/
+        printf("icmp error msg\n");
         send_icmp_error_msg(sr, 3, 3, ip_src, (uint8_t*)ip_packet);
       }
     /* packet not for me, forward packet */
     } else {
+      printf("packet not for me\n");
       ip_packet->ip_ttl--;
       if(ip_packet->ip_ttl <= 0) {
+        printf("icmp err msg\n");
         send_icmp_error_msg(sr, 11, 0, ip_src, (uint8_t*)ip_packet);
       } else {
+        printf("forwarding pack\n");
         ip_packet->ip_sum = calc_ip_checksum(ip_packet);
         forward_packet(sr, lpm, packet, len);
       }
@@ -238,18 +244,21 @@ void send_icmp_error_msg(struct sr_instance *sr,
 }
 
 void forward_packet(struct sr_instance *sr, struct sr_rt *lpm, uint8_t * packet, unsigned int len) {
+  printf("forward pack function\n");
   if(lpm != NULL) {
     sr_ethernet_hdr_t *eth_header = (sr_ethernet_hdr_t *) packet;
     uint32_t next_hop_ip = (uint32_t) lpm->gw.s_addr;
     struct sr_arpentry *arp_entry = sr_arpcache_lookup(&sr->cache, next_hop_ip);
     /* arp entry found, modify mac and send packet */
     if(arp_entry) {
+      printf("forward pack sending packet\n");
       struct sr_if *interface = sr_get_interface(sr, (const char *) (lpm->interface));
       memcpy(eth_header->ether_shost, interface->addr, sizeof(uint8_t) * ETHER_ADDR_LEN);
       memcpy(eth_header->ether_dhost, arp_entry->mac, sizeof(uint8_t) * ETHER_ADDR_LEN);
       sr_send_packet(sr, packet, len, interface);
     } else {
       /* send arp request */
+      printf("sending arp req from forward pack\n");
       struct sr_arpreq *arp_req = sr_arpcache_queuereq(&(sr->cache), next_hop_ip, packet, len, &(lpm->interface));
       sr_arp_send_request(sr, arp_req);
     }
