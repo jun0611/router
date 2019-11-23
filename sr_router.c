@@ -456,7 +456,30 @@ void sr_arp_send_request(struct sr_instance *sr, struct sr_arpreq *req){
   int ARP_Packet_Len = (sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t));
   struct sr_if *interface = sr_get_interface(sr, (req->packets)->iface);
 
-  uint8_t *req_arp = (uint8_t *)malloc(sizeof(ARP_Packet_Len));
+  uint8_t *req_arp = (uint8_t *)malloc(ARP_Packet_Len);
+      /* Creating reply ethernet header */
+      sr_ethernet_hdr_t *req_eth_hdr = (sr_ethernet_hdr_t *) req_arp;
+      printf("7\n");
+      sr_arp_hdr_t *req_arp_hdr = (sr_arp_hdr_t *)(req_arp + sizeof(sr_ethernet_hdr_t));
+      printf("8\n");
+      req_eth_hdr->ether_type = htons(ethertype_arp);
+      printf("9\n");
+      memcpy(req_eth_hdr->ether_dhost, eth_hdr->ether_shost, ETHER_ADDR_LEN);
+      printf("10\n");
+      memcpy(req_eth_hdr->ether_shost, (uint8_t *) my_if->addr, ETHER_ADDR_LEN);
+      printf("11\n");
+      /* Creating a ARP packet */
+      req_arp_hdr->ar_hrd = arp_hdr->ar_hrd;
+      req_arp_hdr->ar_pro = arp_hdr->ar_pro;
+      req_arp_hdr->ar_hln = arp_hdr->ar_hln;
+      req_arp_hdr->ar_pln = arp_hdr->ar_pln;
+
+        req_arp_hdr->ar_op = htons(arp_op_request);
+  req_arp_hdr->ar_tip = req->ip;
+  req_arp_hdr->ar_sip = interface->ip;
+ 
+      printf("12\n");
+      req_arp_hdr->ar_op = htons(arp_op_reply);      
   /* Creating reply ethernet header */
   sr_ethernet_hdr_t *req_eth_hdr = (sr_ethernet_hdr_t *) req_arp;
   sr_arp_hdr_t *req_arp_hdr = (sr_arp_hdr_t *)(sizeof(sr_arp_hdr_t) + sizeof(sr_ethernet_hdr_t));
@@ -465,16 +488,8 @@ void sr_arp_send_request(struct sr_instance *sr, struct sr_arpreq *req){
   memcpy(req_eth_hdr->ether_shost, (uint8_t*) 255, ETHER_ADDR_LEN);
 
   /* Creating a ARP packet */
-  memcpy(req_arp_hdr, arp_hdr, ARP_Packet_Len);
   memcpy(req_arp_hdr->ar_sha, interface->addr,  sizeof(uint8_t) * ETHER_ADDR_LEN);
   memcpy(req_arp_hdr->ar_tha,(uint8_t *) 255,  sizeof(uint8_t) *ETHER_ADDR_LEN);
-  req_arp_hdr->ar_op = arp_op_request;
-  req_arp_hdr->ar_tip = req->ip;
-  req_arp_hdr->ar_sip = interface->ip;
-  req_arp_hdr->ar_hrd = 1;
-  req_arp_hdr->ar_pro = 2048;
-  req_arp_hdr->ar_hln = ETHER_ADDR_LEN;
-  req_arp_hdr->ar_pln = 4;
   sr_send_packet(sr, req_arp_hdr, (req->packets)->len, interface);
   free(req_arp);
   /*
