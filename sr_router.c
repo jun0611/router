@@ -352,7 +352,7 @@ void handle_arp_packet(struct sr_instance* sr,
   sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
   printf("2\n");
   /* Getting ARP Header */
-  sr_arp_hdr_t *arp_hdr = (sr_arp_hdr_t *) (sizeof(sr_arp_hdr_t) + sizeof(sr_ethernet_hdr_t));
+  sr_arp_hdr_t *arp_hdr = (sr_arp_hdr_t *) (packet + sizeof(sr_ethernet_hdr_t));
   printf("3\n");
   /* Getting OP_Code */
   unsigned int ar_op_code = ntohs(arp_hdr->ar_op);
