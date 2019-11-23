@@ -21,7 +21,28 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
    struct sr_arpreq *next = NULL;
    time_t now;
    while (curr != NULL){
-        now = time(0);
+        next = curr->next;
+        handle_arpreq(sr, next);
+        curr = next;
+}
+
+void handle_arpreq(struct sr_instance *sr, struct sr_arpreq req){
+    time_t now = time(0);
+    if(difftime(now, req->sent) > 1.0){
+        if(req->times_sent >= 5){
+            struct sr_packet *cur_packet = req->packets;
+            sr_ip_hdr_t* ip_header = (sr_ip_hdr_t*)((cur_packet->buf) + sizeof(sr_ethernet_hdr_t));
+            send_icmp_error_msg(sr, 3, 1, ip_header->ip_src, (uint8_t *)ip_header);
+            sr_arpreq_destroy(&sr->cache, req);
+        }
+        else{
+            sr_arp_send_request(sr, req);
+            req->sent = now;
+            req->times_sent++;
+        }
+    }   
+}
+        /*now = time(0);
         if (difftime(now, curr->sent) > 1.0){
             if (curr->times_sent >= 5){
                 struct sr_packet *cur_packet = curr->packets;
@@ -36,9 +57,7 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
             }
         }
         curr = next;
-    }
-}
-
+    }*/
 /* You should not need to touch the rest of this code. */
 
 /* Checks if an IP->MAC mapping is in the cache. IP is in network byte order.
