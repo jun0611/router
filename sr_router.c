@@ -250,7 +250,8 @@ void forward_packet(struct sr_instance *sr, struct sr_rt *lpm, uint8_t * packet,
       sr_send_packet(sr, packet, len, interface);
     } else {
       /* send arp request */
-      sr_arp_send_request(sr, arp_entry);
+      struct sr_arpreq *arp_req = sr_arpcache_queuereq(&(sr->cache), next_hop_ip, packet, len, &(lpm->interface));
+      sr_arp_send_request(sr, arp_req);
     }
   }
 }
