@@ -130,7 +130,7 @@ void handle_ip_packet(struct sr_instance* sr,
       send_icmp_error_msg(sr, 11, 0, ip_src, (uint8_t*)ip_packet);
     } else {
       ip_packet->ip_sum = calc_ip_checksum(ip_packet);
-      forward_packet(sr, lpm, packet);
+      forward_packet(sr, lpm, packet, len);
     }
   } else {
     /* ICMP net unreachable*/
@@ -232,12 +232,11 @@ void send_icmp_error_msg(struct sr_instance *sr,
     new_ip_header->ip_sum = calc_ip_checksum(new_ip_header);
   }
   new_eth_header->ether_type = htons(ethertype_ip);
-  forward_packet(sr, lpm, new_packet);
+  forward_packet(sr, lpm, new_packet, len);
 }
 
-void forward_packet(struct sr_instance *sr, struct sr_rt *lpm, uint8_t * packet) {
+void forward_packet(struct sr_instance *sr, struct sr_rt *lpm, uint8_t * packet, unsigned int len) {
   if(lpm != NULL) {
-    int len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
     sr_ethernet_hdr_t *eth_header = (sr_ethernet_hdr_t *) packet;
     uint32_t next_hop_ip = (uint32_t) lpm->gw.s_addr;
     struct sr_arpentry *arp_entry = sr_arpcache_lookup(&sr->cache, next_hop_ip);

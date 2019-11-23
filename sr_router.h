@@ -72,7 +72,7 @@ int is_valid_arp_packet(uint8_t *,  unsigned int, uint16_t );
 int is_valid_ip_packet(uint8_t *,  unsigned int , uint16_t);
 void send_icmp_echo_reply(struct sr_instance* , uint8_t *, unsigned int, char*, sr_icmp_hdr_t *, struct sr_ip_hdr *);
 void send_icmp_error_msg(struct sr_instance*, uint8_t , uint8_t , uint32_t, uint8_t *);
-void forward_packet(struct sr_instance *, struct sr_rt *, uint8_t *); 
+void forward_packet(struct sr_instance *, struct sr_rt *, uint8_t *, unsigned int); 
 struct sr_if* sr_get_interface_by_ip(struct sr_instance*, uint32_t);
 struct sr_rt *find_lpm(struct sr_rt *, uint32_t );
 uint32_t calc_ip_checksum(sr_ip_hdr_t *);
