@@ -466,10 +466,6 @@ void sr_arp_send_request(struct sr_instance *sr, struct sr_arpreq *req){
       printf("8\n");
       req_eth_hdr->ether_type = htons(ethertype_arp);
       printf("9\n");
-      memcpy(req_eth_hdr->ether_dhost, eth_hdr->ether_shost, ETHER_ADDR_LEN);
-      printf("10\n");
-      memcpy(req_eth_hdr->ether_shost, (uint8_t *) my_if->addr, ETHER_ADDR_LEN);
-      printf("11\n");
       /* Creating a ARP packet */
       req_arp_hdr->ar_hrd = arp_hdr->ar_hrd;
       req_arp_hdr->ar_pro = arp_hdr->ar_pro;
@@ -483,9 +479,6 @@ void sr_arp_send_request(struct sr_instance *sr, struct sr_arpreq *req){
       printf("12\n");
       req_arp_hdr->ar_op = htons(arp_op_reply);      
   /* Creating reply ethernet header */
-  sr_ethernet_hdr_t *req_eth_hdr = (sr_ethernet_hdr_t *) req_arp;
-  sr_arp_hdr_t *req_arp_hdr = (sr_arp_hdr_t *)(sizeof(sr_arp_hdr_t) + sizeof(sr_ethernet_hdr_t));
-  req_eth_hdr->ether_type = htons(ethertype_arp);
   memcpy(req_eth_hdr->ether_dhost, interface->addr, ETHER_ADDR_LEN);
   memcpy(req_eth_hdr->ether_shost, (uint8_t*) 255, ETHER_ADDR_LEN);
 
