@@ -109,33 +109,35 @@ void handle_ip_packet(struct sr_instance* sr,
 
   struct sr_if* dst_interface = sr_get_interface_by_ip(sr, ip_dst);
   struct sr_rt *lpm = find_lpm(sr->routing_table, ip_dst);
-  /* packet for me*/
-  if(dst_interface != NULL) {
-    uint8_t ip_protocol = ip_packet->ip_p;
-    if(ip_protocol == ip_protocol_icmp){
-      int icmp_offset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);
-      sr_icmp_hdr_t *icmp_header = (sr_icmp_hdr_t *)(packet + icmp_offset);
-      /* if is ICMP echo req, send echo reply*/
-      if(icmp_header->icmp_type == 8 && icmp_header->icmp_code == 0) {
-        send_icmp_echo_reply(sr, packet, len, interface, icmp_header, ip_packet);
-      }
-    } else {
-      /* send icmp port unreachable*/
-      send_icmp_error_msg(sr, 3, 3, ip_src, (uint8_t*)ip_packet);
-    }
-  /* packet not for me, forward packet */
-  } else if (lpm != NULL) {
-    ip_packet->ip_ttl--;
-    if(ip_packet->ip_ttl <= 0) {
-      send_icmp_error_msg(sr, 11, 0, ip_src, (uint8_t*)ip_packet);
-    } else {
-      ip_packet->ip_sum = calc_ip_checksum(ip_packet);
-      forward_packet(sr, lpm, packet, len);
-    }
-  } else {
+  if(dst_interface == NULL && lpm == NULL) {
     /* ICMP net unreachable*/
     printf("-----ip dest unreachable-----\n");
     send_icmp_error_msg(sr, 3, 0, ip_src, (uint8_t*)ip_packet);
+  } else {
+    /* packet for me*/
+    if(dst_interface != NULL) {
+      uint8_t ip_protocol = ip_packet->ip_p;
+      if(ip_protocol == ip_protocol_icmp){
+        int icmp_offset = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);
+        sr_icmp_hdr_t *icmp_header = (sr_icmp_hdr_t *)(packet + icmp_offset);
+        /* if is ICMP echo req, send echo reply*/
+        if(icmp_header->icmp_type == 8 && icmp_header->icmp_code == 0) {
+          send_icmp_echo_reply(sr, packet, len, interface, icmp_header, ip_packet);
+        }
+      } else {
+        /* send icmp port unreachable*/
+        send_icmp_error_msg(sr, 3, 3, ip_src, (uint8_t*)ip_packet);
+      }
+    /* packet not for me, forward packet */
+    } else {
+      ip_packet->ip_ttl--;
+      if(ip_packet->ip_ttl <= 0) {
+        send_icmp_error_msg(sr, 11, 0, ip_src, (uint8_t*)ip_packet);
+      } else {
+        ip_packet->ip_sum = calc_ip_checksum(ip_packet);
+        forward_packet(sr, lpm, packet, len);
+      }
+    }
   }
 }
 
