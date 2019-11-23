@@ -350,16 +350,16 @@ void handle_arp_packet(struct sr_instance* sr,
   printf("1\n");
   /* Getting Ethernet Header */
   sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
-  printf("1\n");
+  printf("2\n");
   /* Getting ARP Header */
   sr_arp_hdr_t *arp_hdr = (sr_arp_hdr_t *) (sizeof(sr_arp_hdr_t) + sizeof(sr_ethernet_hdr_t));
-  printf("1\n");
+  printf("3\n");
   /* Getting OP_Code */
   unsigned int ar_op_code = ntohs(arp_hdr->ar_op);
-  printf("1\n");
+  printf("4\n");
   /* Check if it is for my interfac */
   struct sr_if *my_if = sr_get_interface(sr, interface/*Dest IP add */);
-  printf("1\n");
+  printf("5\n");
   /* Check what kind of code */
   if(ar_op_code == arp_op_request){
     printf("---------ARP request----------\n");
@@ -370,22 +370,34 @@ void handle_arp_packet(struct sr_instance* sr,
       /* Look up the cache to insert if not in my cache*/
       
       uint8_t *reply_arp = (uint8_t *)malloc(sizeof(ARP_Packet_Len));
+      printf("6\n");
       /* Creating reply ethernet header */
       sr_ethernet_hdr_t *reply_eth_hdr = (sr_ethernet_hdr_t *) reply_arp;
-      sr_arp_hdr_t *reply_arp_hdr = (sr_arp_hdr_t *)(sizeof(sr_arp_hdr_t) + sizeof(sr_ethernet_hdr_t));
+      printf("7\n");
+      sr_arp_hdr_t *reply_arp_hdr = (sr_arp_hdr_t *)(packet + sizeof(sr_ethernet_hdr_t));
+      printf("8\n");
       reply_eth_hdr->ether_type = htons(ethertype_arp);
+      printf("9\n");
       memcpy(reply_eth_hdr->ether_dhost, (uint8_t *) eth_hdr->ether_shost, ETHER_ADDR_LEN);
+      printf("10\n");
       memcpy(reply_eth_hdr->ether_shost, (uint8_t *) my_if->addr, ETHER_ADDR_LEN);
-
+      printf("11\n");
       /* Creating a ARP packet */
       
       memcpy(reply_arp_hdr, arp_hdr, ARP_Packet_Len);
+      printf("12\n");
       memcpy(reply_arp_hdr->ar_sha, my_if->addr, ETHER_ADDR_LEN);
+      printf("13\n");
       memcpy(reply_arp_hdr->ar_tha, arp_hdr->ar_sha, ETHER_ADDR_LEN);
+      printf("14\n");
       reply_arp_hdr->ar_op = arp_op_reply;
+      printf("15\n");
       reply_arp_hdr->ar_tip = my_if->ip;
+      printf("16\n");
       reply_arp_hdr->ar_sip = arp_hdr->ar_sip;
+      printf("17\n");
       sr_send_packet(sr, reply_arp, ARP_Packet_Len, my_if->name);
+      printf("18\n");
       free(reply_arp);
       printf("-----------------ARP Reply created and sent------------------\n");
     }
