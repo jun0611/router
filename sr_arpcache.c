@@ -21,49 +21,28 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
    struct sr_arpreq *next = NULL;
    while (curr != NULL){
         next = curr->next;
-        handle_arpreq(sr, next);
+        if(next != NULL){
+            handle_arpreq(sr, next);
+        }
         curr = next;
     }
 }
 void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req){
     time_t now = time(NULL);
-    printf("req->send\n");
- 
-   printf("\n");
-    printf("in handle+arpreq\n");
     if(difftime(time(0), req->sent) > 1.0){
-        printf("in loop\n");
-	if(req->times_sent >= 5){
-	    printf("icmp\n");
+    	if(req->times_sent >= 5){
             struct sr_packet *cur_packet = req->packets;
             sr_ip_hdr_t* ip_header = (sr_ip_hdr_t*)((cur_packet->buf) + sizeof(sr_ethernet_hdr_t));
             send_icmp_error_msg(sr, 3, 1, ip_header->ip_src, (uint8_t *)ip_header);
             sr_arpreq_destroy(&sr->cache, req);
         }
         else{
-		printf("send req\n");
             sr_arp_send_request(sr, req);
             req->sent = now;
             req->times_sent++;
         }
     }   
 }
-        /*now = time(0);
-        if (difftime(now, curr->sent) > 1.0){
-            if (curr->times_sent >= 5){
-                struct sr_packet *cur_packet = curr->packets;
-                sr_ip_hdr_t* ip_header = (sr_ip_hdr_t*)((cur_packet->buf) + sizeof(sr_ethernet_hdr_t));
-                send_icmp_error_msg(sr, 3, 1, ip_header->ip_src, (uint8_t *)ip_header);
-                sr_arpreq_destroy(&sr->cache, curr);
-            }
-            else{
-                curr->sent = now;
-                sr_arp_send_request(sr, curr);
-                curr->times_sent++;
-            }
-        }
-        curr = next;
-    }*/
 /* You should not need to touch the rest of this code. */
 
 /* Checks if an IP->MAC mapping is in the cache. IP is in network byte order.
