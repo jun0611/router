@@ -76,7 +76,7 @@ void forward_packet(struct sr_instance *, struct sr_rt *, uint8_t *, unsigned in
 struct sr_if* sr_get_interface_by_ip(struct sr_instance*, uint32_t);
 struct sr_rt *find_lpm(struct sr_rt *, uint32_t );
 uint32_t calc_ip_checksum(sr_ip_hdr_t *);
-uint32_t calc_icmp_checksum(sr_icmp_hdr_t *, unsigned int);
+uint32_t calc_icmp_checksum(sr_icmp_hdr_t *);
 void handle_arp_packet(struct sr_instance*, uint8_t *, unsigned int, char* );
 void sr_arp_send_request(struct sr_instance *, struct sr_arpreq *);
 

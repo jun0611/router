@@ -185,7 +185,7 @@ void send_icmp_echo_reply(struct sr_instance* sr,
   /*update icmp header*/
   icmp_header->icmp_type = 0;
   icmp_header->icmp_code = 0;
-  icmp_header->icmp_sum = calc_icmp_checksum(icmp_header, len - (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t)));
+  icmp_header->icmp_sum = calc_icmp_checksum(icmp_header);
   /*update ethernet header*/
   sr_ethernet_hdr_t *e_header = (sr_ethernet_hdr_t *) packet;
   uint8_t* e_source_addr = e_header->ether_shost;
@@ -214,7 +214,7 @@ void send_icmp_error_msg(struct sr_instance *sr,
   new_icmp_header->icmp_type = type;
   new_icmp_header->icmp_code = code;
   memcpy(new_icmp_header->data, ip_packet, ICMP_DATA_SIZE);
-  new_icmp_header->icmp_sum = calc_icmp_checksum((sr_icmp_hdr_t *) new_icmp_header, sizeof(sr_icmp_t3_hdr_t));
+  new_icmp_header->icmp_sum = calc_icmp_checksum((sr_icmp_hdr_t *) new_icmp_header);
   /*set ip headers*/
   struct sr_rt *lpm = find_lpm(sr->routing_table, ip_dst);
   if(lpm != NULL) {
@@ -337,11 +337,11 @@ uint32_t calc_ip_checksum(sr_ip_hdr_t *ip_header) {
  * calculated icmp checksum
  *
  *---------------------------------------------------------------------*/
-uint32_t calc_icmp_checksum(sr_icmp_hdr_t *icmp_header, unsigned int len) {
+uint32_t calc_icmp_checksum(sr_icmp_hdr_t *icmp_header) {
 
       uint16_t icmp_checksum = icmp_header -> icmp_sum;
       icmp_header->icmp_sum = 0;
-      uint16_t calculated_checksum = cksum(icmp_header, len);
+      uint16_t calculated_checksum = cksum(icmp_header, sizeof(sr_icmp_t3_hdr_t));
       icmp_header->icmp_sum = icmp_checksum;
       return calculated_checksum;
 }
