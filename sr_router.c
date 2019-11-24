@@ -234,26 +234,22 @@ void send_icmp_error_msg(struct sr_instance *sr,
 }
 
 void forward_packet(struct sr_instance *sr, struct sr_rt *lpm, uint8_t * packet, unsigned int len) {
-  printf("forward pack function\n");
   if(lpm != NULL) {
     sr_ethernet_hdr_t *eth_header = (sr_ethernet_hdr_t *) packet;
     uint32_t next_hop_ip = (uint32_t) lpm->gw.s_addr;
     struct sr_arpentry *arp_entry = sr_arpcache_lookup(&sr->cache, next_hop_ip);
     /* arp entry found, modify mac and send packet */
     if(arp_entry) {
-      printf("forward pack sending packet\n");
       struct sr_if *interface = sr_get_interface(sr, (const char *) (lpm->interface));
       memcpy(eth_header->ether_shost, interface->addr, sizeof(uint8_t) * ETHER_ADDR_LEN);
       memcpy(eth_header->ether_dhost, arp_entry->mac, sizeof(uint8_t) * ETHER_ADDR_LEN);
       sr_send_packet(sr, packet, len, interface->name);
     } else {
       /* send arp request */
-      printf("sending arp req from forward pack\n");
-      struct sr_arpreq *arp_req = sr_arpcache_queuereq(&(sr->cache), next_hop_ip, packet, len, lpm->interface); /*remove the & from &(lpm->interface)*/
+      struct sr_arpreq *arp_req = sr_arpcache_queuereq(&(sr->cache), next_hop_ip, packet, len, lpm->interface);
       sr_arp_send_request(sr, arp_req);
     }
   }
-printf("forward did nothing\n");
 }
 
 
@@ -296,11 +292,6 @@ struct sr_rt *find_lpm(struct sr_rt *r_table, uint32_t ip_dst) {
 
   while(r_table != NULL) {
     struct in_addr mask = r_table->mask;
-    /*TODO: Verify this check works*/
-    uint32_t temp = r_table->mask.s_addr & ip_dst;
-    uint32_t temp1 = r_table->mask.s_addr;
-    uint32_t temp2 = r_table->dest.s_addr;
-    printf("-----%u == %u, temp2 = %u-----\n",temp, temp1, temp2);
     /* if mask matches ip_dst */
     if((mask.s_addr & ip_dst) == r_table->dest.s_addr) {
       if(mask.s_addr > lpm) {
