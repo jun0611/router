@@ -203,21 +203,21 @@ void send_icmp_error_msg(struct sr_instance *sr,
         uint32_t ip_dst,
         uint8_t *ip_packet)
 {
-  /*initialize new packet*/
-  int len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
-  uint8_t *new_packet = malloc(len);
-  /*initialize packet headers*/
-  sr_ethernet_hdr_t *new_eth_header = (sr_ethernet_hdr_t *) new_packet;
-  sr_ip_hdr_t *new_ip_header = (sr_ip_hdr_t *) (new_packet + sizeof(sr_ethernet_hdr_t));
-  sr_icmp_t3_hdr_t *new_icmp_header = (sr_icmp_t3_hdr_t *) (new_packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
-  /*set icmp headers and icmp check sum*/
-  new_icmp_header->icmp_type = type;
-  new_icmp_header->icmp_code = code;
-  memcpy(new_icmp_header->data, ip_packet, ICMP_DATA_SIZE);
-  new_icmp_header->icmp_sum = calc_icmp_checksum((sr_icmp_hdr_t *) new_icmp_header);
-  /*set ip headers*/
   struct sr_rt *lpm = find_lpm(sr->routing_table, ip_dst);
   if(lpm != NULL) {
+    /*initialize new packet*/
+    int len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t);
+    uint8_t *new_packet = malloc(len);
+    /*initialize packet headers*/
+    sr_ethernet_hdr_t *new_eth_header = (sr_ethernet_hdr_t *) new_packet;
+    sr_ip_hdr_t *new_ip_header = (sr_ip_hdr_t *) (new_packet + sizeof(sr_ethernet_hdr_t));
+    sr_icmp_t3_hdr_t *new_icmp_header = (sr_icmp_t3_hdr_t *) (new_packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+    /*set icmp headers and icmp check sum*/
+    new_icmp_header->icmp_type = type;
+    new_icmp_header->icmp_code = code;
+    memcpy(new_icmp_header->data, ip_packet, ICMP_DATA_SIZE);
+    new_icmp_header->icmp_sum = calc_icmp_checksum((sr_icmp_hdr_t *) new_icmp_header);
+    /*set ip headers*/
     struct sr_if *cur_interface = sr_get_interface(sr, lpm->interface);
     new_ip_header->ip_tos = 0;
     new_ip_header->ip_len = htons(len - sizeof(sr_ethernet_hdr_t));
@@ -228,9 +228,9 @@ void send_icmp_error_msg(struct sr_instance *sr,
     new_ip_header->ip_src = cur_interface->ip;
     new_ip_header->ip_dst = ip_dst;
     new_ip_header->ip_sum = calc_ip_checksum(new_ip_header);
+    new_eth_header->ether_type = htons(ethertype_ip);
+    forward_packet(sr, lpm, new_packet, len);
   }
-  new_eth_header->ether_type = htons(ethertype_ip);
-  forward_packet(sr, lpm, new_packet, len);
 }
 
 void forward_packet(struct sr_instance *sr, struct sr_rt *lpm, uint8_t * packet, unsigned int len) {
