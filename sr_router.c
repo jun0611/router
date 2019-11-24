@@ -4,7 +4,7 @@
  * Contact: casado@stanford.edu
  *
  * Description:
- *
+ *a
  * This file contains all the functions that interact directly
  * with the routing table, as well as the main entry method
  * for routing.
@@ -263,6 +263,7 @@ void forward_packet(struct sr_instance *sr, struct sr_rt *lpm, uint8_t * packet,
       sr_arp_send_request(sr, arp_req);
     }
   }
+printf("forward did nothing\n");
 }
 
 
@@ -311,7 +312,7 @@ struct sr_rt *find_lpm(struct sr_rt *r_table, uint32_t ip_dst) {
     uint32_t temp2 = r_table->dest.s_addr;
     printf("-----%u == %u, temp2 = %u-----\n",temp, temp1, temp2);
     /* if mask matches ip_dst */
-    if((mask.s_addr & ip_dst) == mask.s_addr) {
+    if((mask.s_addr & ip_dst) == r_table->dest.s_addr) {
       if(mask.s_addr > lpm) {
         lpm = mask.s_addr;
         lpm_rt = r_table;
@@ -324,7 +325,8 @@ struct sr_rt *find_lpm(struct sr_rt *r_table, uint32_t ip_dst) {
 
 /*--------------------------------------------------------------------- 
  * Method: calc_ip_checksum(..)
- *
+ *RP reply----------
+
  * calculated ip checksum
  *
  *---------------------------------------------------------------------*/
@@ -437,20 +439,24 @@ void handle_arp_packet(struct sr_instance* sr,
     /* Insert it to my ARP cache */
     struct sr_arpreq* req = sr_arpcache_insert(&(sr->cache), arp_hdr->ar_sha, arp_hdr->ar_sip);
     /* Sending outstanding packet in Queue */
-    if(!req){
+    if(req){
+	printf("in req\n");
        struct sr_packet *cPacket = req->packets;
-       uint8_t *reply_Packet;
+       uint8_t *reply_packet;
        /* Looping through packet in req */
-       while(!cPacket){
+       while(cPacket){
+	printf("in while\n");
         /* Creating ethernet header */
-        sr_ethernet_hdr_t *reply_eth_hdr = (sr_ethernet_hdr_t *) packet;
-        reply_eth_hdr->ether_type = htons(ethertype_arp);
-        memcpy(reply_eth_hdr->ether_shost, my_if->addr, ETHER_ADDR_LEN);
-        memcpy(reply_eth_hdr->ether_dhost, (uint8_t *) arp_hdr->ar_sha, ETHER_ADDR_LEN);
-        reply_Packet = malloc(sizeof(uint8_t) * cPacket->len);
-        memcpy(reply_Packet, cPacket, cPacket->len);
-        sr_send_packet(sr, reply_Packet, cPacket->len, cPacket->iface);
-        free(reply_Packet);
+	uint8_t *reply_packet = cPacket->buf;
+	struct sr_if *cInterface = sr_get_interface(sr, cPacket->iface);
+        sr_ethernet_hdr_t *reply_eth_hdr = (sr_ethernet_hdr_t *) reply_packet;
+        memcpy(reply_eth_hdr->ether_shost, cInterface->addr, ETHER_ADDR_LEN);
+        memcpy(reply_eth_hdr->ether_dhost,  arp_hdr->ar_sha, ETHER_ADDR_LEN);
+        sr_send_packet(sr, reply_packet, cPacket->len, cInterface->name);
+	printf("outstanding pack\n");
+	print_hdrs(reply_packet, cPacket->len);
+        free(reply_packet);
+	cPacket = cPacket->next;
        }
     }
   }
@@ -463,8 +469,7 @@ void handle_arp_packet(struct sr_instance* sr,
 /*Sending an ARP request */
 void sr_arp_send_request(struct sr_instance *sr, struct sr_arpreq *req){
   printf("---------Sending ARP request----------\n");
-  /* Packet Size */
-  sr_arp_hdr_t *arp_hdr = (sr_arp_hdr_t *) (sizeof(sr_arp_hdr_t) + sizeof(sr_ethernet_hdr_t));
+  /* Paciket Size */
   int ARP_Packet_Len = (sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t));
   struct sr_if *interface = sr_get_interface(sr, (req->packets)->iface);
 
@@ -477,25 +482,29 @@ void sr_arp_send_request(struct sr_instance *sr, struct sr_arpreq *req){
       req_eth_hdr->ether_type = htons(ethertype_arp);
       printf("9\n");
       /* Creating a ARP packet */
-      req_arp_hdr->ar_hrd = arp_hdr->ar_hrd;
-      req_arp_hdr->ar_pro = arp_hdr->ar_pro;
-      req_arp_hdr->ar_hln = arp_hdr->ar_hln;
-      req_arp_hdr->ar_pln = arp_hdr->ar_pln;
+      req_arp_hdr->ar_hrd = htons(1);
+      printf("fuck you\n");
+      req_arp_hdr->ar_pro = htons(ethertype_ip);
+      req_arp_hdr->ar_hln = ETHER_ADDR_LEN;
+      req_arp_hdr->ar_pln = 4;
 
         req_arp_hdr->ar_op = htons(arp_op_request);
   req_arp_hdr->ar_tip = req->ip;
+printf("ar_tip\n");
   req_arp_hdr->ar_sip = interface->ip;
  
-      printf("12\n");
-      req_arp_hdr->ar_op = htons(arp_op_reply);      
+      printf("12\n");      
   /* Creating reply ethernet header */
-  memcpy(req_eth_hdr->ether_dhost, interface->addr, ETHER_ADDR_LEN);
-  memcpy(req_eth_hdr->ether_shost, (uint8_t*) 255, ETHER_ADDR_LEN);
-
+  memset(req_eth_hdr->ether_dhost, 255, ETHER_ADDR_LEN);
+printf("13\n");
+  memcpy(req_eth_hdr->ether_shost, interface->addr, ETHER_ADDR_LEN);
+printf("14\n");
   /* Creating a ARP packet */
-  memcpy(req_arp_hdr->ar_sha, interface->addr,  sizeof(uint8_t) * ETHER_ADDR_LEN);
-  memcpy(req_arp_hdr->ar_tha,(uint8_t *) 255,  sizeof(uint8_t) *ETHER_ADDR_LEN);
-  sr_send_packet(sr, req_arp_hdr, (req->packets)->len, interface);
+  memcpy(req_arp_hdr->ar_sha, interface->addr,   ETHER_ADDR_LEN);
+printf("15\n");
+  memset(req_arp_hdr->ar_tha, 0,ETHER_ADDR_LEN);
+printf("16\n");
+  sr_send_packet(sr, req_arp, (req->packets)->len, interface);
   free(req_arp);
   /*
   sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *)packet;
