@@ -80,11 +80,6 @@ uint32_t calc_icmp_checksum(sr_icmp_hdr_t *, unsigned int);
 void handle_arp_packet(struct sr_instance*, uint8_t *, unsigned int, char* );
 void sr_arp_send_request(struct sr_instance *, struct sr_arpreq *);
 
-  
-
-  
-
-
 /* -- sr_if.c -- */
 void sr_add_interface(struct sr_instance* , const char* );
 void sr_set_ether_ip(struct sr_instance* , uint32_t );
